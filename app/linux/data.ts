@@ -323,6 +323,16 @@ command 2>&1             # redirect stderr into stdout (combine both)
 command > out.txt 2>&1   # everything to one file
 command < input.txt      # read stdin from a file</pre>
 <p>The numbers are <strong>file descriptors</strong>: <code>0</code> = stdin, <code>1</code> = stdout, <code>2</code> = stderr. <code>2>&1</code> means "send file descriptor 2 to wherever file descriptor 1 is going."</p>
+<p>Redirections are evaluated <strong>left to right</strong>. Order matters — these two look similar but behave differently:</p>
+<pre class="codeblock"># CORRECT — capture both stdout and stderr to file
+command > out.txt 2>&1
+# 1. stdout (fd 1) → out.txt
+# 2. stderr (fd 2) → wherever fd 1 now points → out.txt ✓
+
+# WRONG — stderr still goes to the terminal
+command 2>&1 > out.txt
+# 1. stderr (fd 2) → wherever fd 1 currently points → terminal
+# 2. stdout (fd 1) → out.txt   (stderr already redirected, unchanged)</pre>
 <div class="callout">
   <div class="callout-label">In practice</div>
   <code>./deploy.sh > deploy.log 2>&1</code> — run a script and capture all output (including errors) to a log file. Standard pattern for any long-running operation you want a record of.
@@ -404,12 +414,14 @@ alias gs='git status'
     id: 'linux-m1', tier: 't2',
     title: 'Permissions — what rwx actually means',
     html: `<p>Every file and directory has an owner, a group, and a permission bitmask. <code>ls -la</code> shows it:</p>
-<pre class="codeblock">-rwxr-xr-- 1 mohsin staff 4096 Jun 1 12:00 deploy.sh
-│└──┘└──┘└──┘
-│ │   │   └── other: r-- = read only
-│ │   └─────── group: r-x = read + execute
-│ └─────────── owner: rwx = read + write + execute
-└───────────── - = file, d = directory, l = symlink</pre>
+<pre class="codeblock">-rwxr-xr-- 1 mohsin  staff   4096 Jun 1 12:00 deploy.sh
+│└──┘└──┘└──┘  │      │
+│ │   │   │    │      └─── primary group
+│ │   │   │    └────────── owner username
+│ │   │   └─────────────── other:  r-- = read only
+│ │   └─────────────────── group:  r-x = read + execute
+│ └─────────────────────── owner:  rwx = read + write + execute
+└───────────────────────── type:   - = file  d = directory  l = symlink</pre>
 <p>Three permission bits per entity: <strong>r</strong>ead (4), <strong>w</strong>rite (2), e<strong>x</strong>ecute (1).</p>
 <pre class="codeblock">chmod 755 script.sh     # rwxr-xr-x  (owner full, others read+exec)
 chmod 644 config.txt    # rw-r--r--  (owner read+write, others read)
@@ -420,7 +432,7 @@ chown mohsin:staff dir/ # change owner and group</pre>
 <p>The octal numbers: each digit is the sum of r(4)+w(2)+x(1) for owner, group, other in order. <code>755</code> = 7(rwx) 5(r-x) 5(r-x).</p>
 <div class="callout">
   <div class="callout-label">Execute on directories</div>
-  The <code>x</code> bit on a <em>directory</em> means "enter" — you need it to <code>cd</code> into that directory. <code>r</code> alone lets you list the contents but not navigate into them.
+  The <code>x</code> bit on a <em>directory</em> means "traverse" — you need it to <code>cd</code> into that directory or access anything inside it. <code>r</code> alone lets you list the names with <code>ls</code> but you cannot enter or read any file inside. A common pattern: <code>chmod 711 /home/user</code> lets the user enter their own home dir while hiding the contents from others.
 </div>`,
   },
   {
@@ -943,9 +955,18 @@ fd 5  →  /dev/null</pre>
 lsof -p 1234           # list all open files for PID 1234
 lsof -i :8080          # which process has port 8080 open</pre>
 <p>This is why redirection works — <code>2>&1</code> literally duplicates file descriptor 2 to point at the same thing as file descriptor 1. The program never knows; it just writes to fd 2 as normal.</p>
+<p>This also explains how to safely truncate a live log file without restarting the process. <code>rm</code> removes the directory entry — the process still holds an open file descriptor to the old inode and keeps writing to it (disk space not freed). Instead, truncate in-place:</p>
+<pre class="codeblock"># WRONG — removes inode the process holds open; disk space not freed
+rm /var/log/app.log
+
+# CORRECT — truncates to zero bytes via the same path the process has open
+> /var/log/app.log
+
+# Verify the process is still writing to the same (now empty) file
+lsof -p $(pgrep myapp) | grep app.log</pre>
 <div class="callout">
-  <div class="callout-label">Practical consequence</div>
-  If a program opens a log file, you delete the file, and the program keeps running — the disk space is NOT freed. The file descriptor is still open, and the inode (actual data) persists until all file descriptors pointing to it are closed. <code>lsof | grep deleted</code> reveals these zombie files.
+  <div class="callout-label">Deleted file still consuming disk space</div>
+  If a program opens a log file, you delete the file, and the program keeps running — the disk space is NOT freed. The inode persists until all file descriptors pointing to it are closed. <code>lsof | grep deleted</code> reveals these zombie files. <code>&gt; /path/to/log</code> avoids this entirely because it truncates via the existing path the process already has open.
 </div>`,
   },
   {
@@ -963,7 +984,12 @@ SIGTERM     15     Terminate          Polite stop (can be caught)
 SIGSTOP     19     Stop               Cannot be caught (Ctrl+Z sends SIGTSTP)
 SIGUSR1     10     User-defined       Application-specific
 SIGUSR2     12     User-defined       Application-specific</pre>
-<p>The critical difference: <strong>SIGKILL cannot be caught, blocked, or ignored</strong>. The kernel handles it directly. SIGTERM can be caught — processes use it to close connections, flush buffers, and write state before exiting. Always try SIGTERM first.</p>
+<p>The critical difference: <strong>SIGKILL cannot be caught, blocked, or ignored</strong>. The kernel handles it directly — the process is removed immediately with no user code running. SIGTERM can be caught, which is why well-written services use it for graceful shutdown:</p>
+<ul>
+  <li><strong>Web server</strong>: catches SIGTERM → stops accepting new connections → waits for in-flight requests to finish → exits. <code>kill -9</code> drops those requests mid-response.</li>
+  <li><strong>Database client</strong>: catches SIGTERM → rolls back open transactions → releases connection pool → exits cleanly. <code>kill -9</code> leaves connections dangling until the server times them out.</li>
+  <li><strong>Log aggregator</strong> (Fluentd, Logstash): catches SIGTERM → flushes buffered log entries to the sink → exits. <code>kill -9</code> drops whatever's in the buffer.</li>
+</ul>
 <p>In bash scripts, trap signals:</p>
 <pre class="codeblock">trap "echo 'Caught SIGTERM, cleaning up...'; cleanup; exit 0" SIGTERM
 trap "rm -f /tmp/lockfile" EXIT    # always runs when script exits</pre>
@@ -1039,7 +1065,17 @@ sysctl net.ipv4.ip_forward=1             # same thing, via sysctl</pre>
 # Always start with this shebang line
 
 set -euo pipefail   # exit on error, undefined vars, pipe failures</pre>
-<p><code>set -euo pipefail</code> is essential — by default bash keeps running after errors. This line makes scripts fail loudly instead of silently.</p>
+<p><code>set -euo pipefail</code> is essential — by default bash keeps running after errors. What each flag does:</p>
+<ul>
+  <li><strong><code>-e</code></strong> — exit immediately if any command returns a non-zero exit code. Without it, <code>rm -rf /important/dir</code> failing silently lets the next line run.</li>
+  <li><strong><code>-u</code></strong> — treat unset variables as an error. Without it, a typo like <code>$HOMEE</code> expands to an empty string, which can produce <code>rm -rf /</code> from <code>rm -rf "$HOMEE/"</code>.</li>
+  <li><strong><code>-o pipefail</code></strong> — a pipeline's exit code is the first non-zero code in the chain, not just the last command. Without it, <code>false | true</code> exits 0.</li>
+</ul>
+<p>Write errors to stderr with <code>>&2</code> so callers can separate error messages from output:</p>
+<pre class="codeblock">if [ ! -f "config.yml" ]; then
+  echo "ERROR: config.yml not found" >&2
+  exit 1
+fi</pre>
 <pre class="codeblock"># Variables (no spaces around =)
 name="world"
 echo "hello $name"
