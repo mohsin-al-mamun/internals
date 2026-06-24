@@ -60,7 +60,7 @@ export default function Home() {
         {/* Divider */}
         <div className={styles.heroDivider}>
           <div className={styles.dividerLine} />
-          <span className={styles.dividerLabel}>Two Answers&nbsp;&middot;&nbsp;Two Tracks</span>
+          <span className={styles.dividerLabel}>One Path&nbsp;&middot;&nbsp;Four Tracks</span>
           <div className={styles.dividerLine} />
         </div>
 
