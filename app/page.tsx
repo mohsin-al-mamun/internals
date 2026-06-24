@@ -3,6 +3,7 @@ import styles from "./page.module.css";
 import { REL_TOPICS } from "./relational/data";
 import { NREL_TOPICS } from "./nonrelational/data";
 import { LINUX_TOPICS } from "./linux/data";
+import { DOCKER_TOPICS } from "./docker/data";
 import ContinueLink from "./components/ContinueLink";
 import HeroDiagram from "./components/HeroDiagram";
 
@@ -44,7 +45,7 @@ export default function Home() {
         {/* Stat row */}
         <div className={styles.statRow}>
           <span className={styles.statItem}>
-            <span className={styles.statNum}>{REL_TOPICS.length + NREL_TOPICS.length + LINUX_TOPICS.length}</span> lessons
+            <span className={styles.statNum}>{REL_TOPICS.length + NREL_TOPICS.length + LINUX_TOPICS.length + DOCKER_TOPICS.length}</span> lessons
           </span>
           <span className={styles.statSep}>·</span>
           <span className={styles.statItem}>
@@ -111,6 +112,22 @@ export default function Home() {
               start with surface <span>→</span>
             </span>
             <ContinueLink track="linux" accentColor="#f59e42" />
+          </Link>
+
+          <Link href="/docker" className={`${styles.trackCard} ${styles.trackDocker}`}>
+            <div className={styles.cardAccentLine} />
+            <div className={styles.cardTagRow}>
+              <span className={`${styles.tagDot} ${styles.tagDotCyan}`} />
+              <span className={`${styles.tagText} ${styles.tagTextCyan}`}>Docker</span>
+            </div>
+            <h2 className={styles.cardTitle}>Containers</h2>
+            <div className={styles.cardMeta}>images &middot; volumes &middot; compose &middot; networking</div>
+            <p className={styles.cardDesc}>From docker run to what namespaces and cgroups actually do.</p>
+            <div className={styles.cardLessonCount}>{DOCKER_TOPICS.length} lessons &middot; 3 tiers</div>
+            <span className={`${styles.cardCta} ${styles.ctaCyan}`}>
+              start with surface <span>→</span>
+            </span>
+            <ContinueLink track="docker" accentColor="#0db7ed" />
           </Link>
         </section>
       </div>
