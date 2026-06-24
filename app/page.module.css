@@ -380,7 +380,7 @@
 /* ── Cards ── */
 .cardsGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 26px;
   align-items: stretch;
 }
@@ -587,6 +587,6 @@
   .clientWindow   { width: 130px; }
 }
 
-@media (min-width: 961px) and (max-width: 1400px) {
-  .cardsGrid { grid-template-columns: 1fr 1fr; }
+@media (max-width: 600px) {
+  .cardsGrid { grid-template-columns: 1fr; }
 }
