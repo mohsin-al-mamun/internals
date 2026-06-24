@@ -380,7 +380,7 @@
 /* ── Cards ── */
 .cardsGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 26px;
   align-items: stretch;
 }
@@ -410,6 +410,12 @@
   background: #0e1014;
 }
 
+.trackLinux:hover {
+  border-color: rgba(245, 158, 66, 0.4);
+  transform: translateY(-3px);
+  background: #100f0c;
+}
+
 .cardAccentLine {
   position: absolute;
   top: 0;
@@ -419,8 +425,9 @@
   opacity: 0.6;
 }
 
-.trackRel .cardAccentLine  { background: linear-gradient(90deg, #5b9bf9, transparent); }
-.trackNrel .cardAccentLine { background: linear-gradient(90deg, #38d39b, transparent); }
+.trackRel .cardAccentLine   { background: linear-gradient(90deg, #5b9bf9, transparent); }
+.trackNrel .cardAccentLine  { background: linear-gradient(90deg, #38d39b, transparent); }
+.trackLinux .cardAccentLine { background: linear-gradient(90deg, #f59e42, transparent); }
 
 .cardTagRow {
   display: flex;
@@ -436,6 +443,7 @@
 
 .tagDotBlue  { background: #5b9bf9; box-shadow: 0 0 10px rgba(91, 155, 249, 0.6); }
 .tagDotGreen { background: #38d39b; box-shadow: 0 0 10px rgba(56, 211, 155, 0.6); }
+.tagDotAmber { background: #f59e42; box-shadow: 0 0 10px rgba(245, 158, 66, 0.6); }
 
 .tagText {
   font-family: var(--font-mono), monospace;
@@ -446,6 +454,7 @@
 
 .tagTextBlue  { color: #5b9bf9; }
 .tagTextGreen { color: #38d39b; }
+.tagTextAmber { color: #f59e42; }
 
 .cardTitle {
   margin: 20px 0 0;
@@ -493,6 +502,7 @@
 
 .ctaBlue  { color: #5b9bf9; }
 .ctaGreen { color: #38d39b; }
+.ctaAmber { color: #f59e42; }
 
 .trackCard:hover .cardCta { gap: 14px; }
 
@@ -565,4 +575,8 @@
   .heroDivider    { margin: 44px 0 32px; }
   .diagramContent { gap: 12px; }
   .clientWindow   { width: 130px; }
+}
+
+@media (min-width: 961px) and (max-width: 1200px) {
+  .cardsGrid { grid-template-columns: 1fr 1fr; }
 }

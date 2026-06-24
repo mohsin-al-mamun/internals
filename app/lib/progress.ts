@@ -1,19 +1,25 @@
 const STORAGE_KEY = 'dbconsole:progress';
 
-type TrackId = 'relational' | 'nonrelational';
+type TrackId = 'relational' | 'nonrelational' | 'linux';
 
 type Progress = {
   relational: string[];
   nonrelational: string[];
+  linux: string[];
 };
 
 function load(): Progress {
-  if (typeof window === 'undefined') return { relational: [], nonrelational: [] };
+  if (typeof window === 'undefined') return { relational: [], nonrelational: [], linux: [] };
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : { relational: [], nonrelational: [] };
+    const parsed = raw ? JSON.parse(raw) : {};
+    return {
+      relational: parsed.relational ?? [],
+      nonrelational: parsed.nonrelational ?? [],
+      linux: parsed.linux ?? [],
+    };
   } catch {
-    return { relational: [], nonrelational: [] };
+    return { relational: [], nonrelational: [], linux: [] };
   }
 }
 

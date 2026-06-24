@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react';
 import { getLastCompleted } from '../lib/progress';
 import { REL_TOPICS } from '../relational/data';
 import { NREL_TOPICS } from '../nonrelational/data';
+import { LINUX_TOPICS } from '../linux/data';
 
 interface Props {
-  track: 'relational' | 'nonrelational';
+  track: 'relational' | 'nonrelational' | 'linux';
   accentColor: string;
 }
 
@@ -16,7 +17,7 @@ export default function ContinueLink({ track, accentColor }: Props) {
   useEffect(() => {
     const lastId = getLastCompleted(track);
     if (!lastId) return;
-    const topics = track === 'relational' ? REL_TOPICS : NREL_TOPICS;
+    const topics = track === 'relational' ? REL_TOPICS : track === 'nonrelational' ? NREL_TOPICS : LINUX_TOPICS;
     const idx = topics.findIndex(t => t.id === lastId);
     const next = topics[idx + 1];
     if (next) setResumeTitle(next.title);

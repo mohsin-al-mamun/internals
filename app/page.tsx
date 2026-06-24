@@ -2,6 +2,7 @@ import Link from "next/link";
 import styles from "./page.module.css";
 import { REL_TOPICS } from "./relational/data";
 import { NREL_TOPICS } from "./nonrelational/data";
+import { LINUX_TOPICS } from "./linux/data";
 import ContinueLink from "./components/ContinueLink";
 import HeroDiagram from "./components/HeroDiagram";
 
@@ -43,7 +44,7 @@ export default function Home() {
         {/* Stat row */}
         <div className={styles.statRow}>
           <span className={styles.statItem}>
-            <span className={styles.statNum}>{REL_TOPICS.length + NREL_TOPICS.length}</span> lessons
+            <span className={styles.statNum}>{REL_TOPICS.length + NREL_TOPICS.length + LINUX_TOPICS.length}</span> lessons
           </span>
           <span className={styles.statSep}>·</span>
           <span className={styles.statItem}>
@@ -94,6 +95,22 @@ export default function Home() {
               start with surface <span>→</span>
             </span>
             <ContinueLink track="nonrelational" accentColor="#38d39b" />
+          </Link>
+
+          <Link href="/linux" className={`${styles.trackCard} ${styles.trackLinux}`}>
+            <div className={styles.cardAccentLine} />
+            <div className={styles.cardTagRow}>
+              <span className={`${styles.tagDot} ${styles.tagDotAmber}`} />
+              <span className={`${styles.tagText} ${styles.tagTextAmber}`}>Linux</span>
+            </div>
+            <h2 className={styles.cardTitle}>Commands</h2>
+            <div className={styles.cardMeta}>shell &middot; filesystem &middot; processes &middot; scripting</div>
+            <p className={styles.cardDesc}>The terminal from first principles — how the OS actually works.</p>
+            <div className={styles.cardLessonCount}>{LINUX_TOPICS.length} lessons &middot; 3 tiers &middot; Docker sandbox</div>
+            <span className={`${styles.cardCta} ${styles.ctaAmber}`}>
+              start with surface <span>→</span>
+            </span>
+            <ContinueLink track="linux" accentColor="#f59e42" />
           </Link>
         </section>
       </div>
