@@ -13,6 +13,8 @@ import {
 } from './data';
 import SqlPlayground from './SqlPlayground';
 import styles from './track.module.css';
+import { markComplete, getCompleted } from '../lib/progress';
+import ContentBody from '../components/ContentBody';
 
 const TRACK_COLOR = '#4DA8DA';
 const TRACK_DIM   = '#4DA8DA33';
@@ -36,7 +38,7 @@ function CopyButton({ text }: { text: string }) {
 // ── Setup view ────────────────────────────────────────────────
 function SetupView() {
   return (
-    <>
+    <div className={styles.contentFade}>
       <div className={styles.eyebrow}>
         <span className={styles.eyebrowDot} />
         SETUP · POSTGRES
@@ -73,7 +75,7 @@ function SetupView() {
           </div>`,
         }}
       />
-    </>
+    </div>
   );
 }
 
@@ -83,22 +85,25 @@ interface TopicViewProps {
   tier: Tier | undefined;
   prev: Topic | null;
   next: Topic | null;
+  topicIndex: number;
+  totalTopics: number;
   onNavigate: (id: string) => void;
+  onComplete: (id: string) => void;
 }
 
-function TopicView({ topic, tier, prev, next, onNavigate }: TopicViewProps) {
+function TopicView({ topic, tier, prev, next, topicIndex, totalTopics, onNavigate, onComplete }: TopicViewProps) {
   return (
-    <>
+    <div key={topic.id} className={styles.contentFade}>
       <div className={styles.eyebrow}>
         <span className={styles.eyebrowDot} />
         {tier?.label.toUpperCase()} · POSTGRES
+        <span style={{ marginLeft: 'auto', color: 'var(--muted)', fontSize: 11 }}>
+          {topicIndex + 1} / {totalTopics}
+        </span>
       </div>
       <h1 className={styles.contentTitle}>{topic.title}</h1>
 
-      <div
-        className={styles.contentBody}
-        dangerouslySetInnerHTML={{ __html: topic.html }}
-      />
+      <ContentBody html={topic.html} className={styles.contentBody} />
 
       {topic.playground?.type === 'sql' && (
         <SqlPlayground
@@ -121,22 +126,39 @@ function TopicView({ topic, tier, prev, next, onNavigate }: TopicViewProps) {
         {next ? (
           <button
             className={`${styles.navBtn} ${styles.navBtnRight}`}
-            onClick={() => onNavigate(next.id)}
+            onClick={() => { onComplete(topic.id); onNavigate(next.id); }}
           >
             <span className={styles.navBtnLabel}>next →</span>
             {next.title}
           </button>
         ) : (
-          <span />
+          <button
+            className={`${styles.navBtn} ${styles.navBtnRight}`}
+            onClick={() => onComplete(topic.id)}
+            style={{ color: 'var(--track-color)' }}
+          >
+            <span className={styles.navBtnLabel}>done</span>
+            Mark complete ✓
+          </button>
         )}
       </div>
-    </>
+    </div>
   );
 }
 
 // ── Main component ────────────────────────────────────────────
 export default function RelationalTrack() {
   const [currentId, setCurrentId] = useState<string>(REL_TOPICS[0].id);
+  const [completed, setCompleted] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    setCompleted(new Set(getCompleted('relational')));
+  }, []);
+
+  const complete = useCallback((topicId: string) => {
+    markComplete('relational', topicId);
+    setCompleted(c => new Set([...c, topicId]));
+  }, []);
 
   const navigate = useCallback((id: string) => {
     setCurrentId(id);
@@ -160,7 +182,7 @@ export default function RelationalTrack() {
       }
     >
       {/* ── Sidebar ── */}
-      <aside className={styles.sidebar}>
+      <aside className={styles.sidebar} aria-label="Track navigation">
         <div className={styles.sidebarHeader}>
           <Link href="/" className={styles.homeLink}>
             ← back to console home
@@ -180,6 +202,7 @@ export default function RelationalTrack() {
 
         {REL_TIERS.map((tier) => {
           const topicsInTier = REL_TOPICS.filter((t) => t.tier === tier.id);
+          const doneInTier = topicsInTier.filter(t => completed.has(t.id)).length;
           return (
             <div
               key={tier.id}
@@ -187,20 +210,23 @@ export default function RelationalTrack() {
             >
               <div className={styles.tierHead}>
                 <div className={styles.tierName}>{tier.name}</div>
-                <div
-                  className={`${styles.tierLabel} ${
-                    tier.locked ? styles.tierLabelMuted : ''
-                  }`}
-                >
-                  {tier.label}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div className={`${styles.tierLabel} ${tier.locked ? styles.tierLabelMuted : ''}`}>
+                    {tier.label}
+                  </div>
+                  {!tier.locked && doneInTier > 0 && (
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--track-color)', opacity: 0.8 }}>
+                      {doneInTier}/{topicsInTier.length}
+                    </span>
+                  )}
                 </div>
               </div>
               <div className={styles.strata}>
-                {REL_TIERS.map((t2) => (
+                {topicsInTier.map((_, i) => (
                   <div
-                    key={t2.id}
+                    key={i}
                     className={`${styles.strataBar} ${
-                      t2.order <= tier.order ? styles.strataBarFill : ''
+                      completed.has(topicsInTier[i].id) ? styles.strataBarFill : ''
                     }`}
                   />
                 ))}
@@ -218,7 +244,12 @@ export default function RelationalTrack() {
                         topic.id === currentId ? styles.navItemActive : ''
                       }`}
                       onClick={() => navigate(topic.id)}
+                      aria-current={topic.id === currentId ? 'page' : undefined}
+                      title={topic.title}
                     >
+                      {completed.has(topic.id) && (
+                        <span style={{ color: 'var(--track-color)', marginRight: 5, flexShrink: 0 }}>✓</span>
+                      )}
                       {topic.title}
                     </button>
                   ))}
@@ -230,7 +261,7 @@ export default function RelationalTrack() {
       </aside>
 
       {/* ── Content ── */}
-      <main className={styles.content}>
+      <main className={styles.content} aria-label="Lesson content">
         {isSetup ? (
           <SetupView />
         ) : currentTopic ? (
@@ -239,7 +270,10 @@ export default function RelationalTrack() {
             tier={currentTier}
             prev={prev}
             next={next}
+            topicIndex={idx}
+            totalTopics={REL_TOPICS.length}
             onNavigate={navigate}
+            onComplete={complete}
           />
         ) : null}
       </main>

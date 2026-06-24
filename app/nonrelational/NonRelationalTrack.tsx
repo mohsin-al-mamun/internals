@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
   NREL_TOPICS,
@@ -14,6 +14,8 @@ import {
 } from './data';
 import NrelPlayground from './NrelPlayground';
 import styles from '../relational/track.module.css';
+import { markComplete, getCompleted } from '../lib/progress';
+import ContentBody from '../components/ContentBody';
 
 const TRACK_COLOR = '#38d39b';
 const TRACK_DIM   = '#38d39b33';
@@ -35,7 +37,7 @@ function CopyButton({ text }: { text: string }) {
 
 function SetupView() {
   return (
-    <>
+    <div className={styles.contentFade}>
       <div className={styles.eyebrow}>
         <span className={styles.eyebrowDot} />
         SETUP · MONGODB / REDIS
@@ -87,7 +89,7 @@ function SetupView() {
           </div>`,
         }}
       />
-    </>
+    </div>
   );
 }
 
@@ -96,22 +98,25 @@ interface TopicViewProps {
   tier: Tier | undefined;
   prev: NrelTopic | null;
   next: NrelTopic | null;
+  topicIndex: number;
+  totalTopics: number;
   onNavigate: (id: string) => void;
+  onComplete: (id: string) => void;
 }
 
-function TopicView({ topic, tier, prev, next, onNavigate }: TopicViewProps) {
+function TopicView({ topic, tier, prev, next, topicIndex, totalTopics, onNavigate, onComplete }: TopicViewProps) {
   return (
-    <>
+    <div key={topic.id} className={styles.contentFade}>
       <div className={styles.eyebrow}>
         <span className={styles.eyebrowDot} />
         {tier?.label.toUpperCase()} · MONGODB / REDIS
+        <span style={{ marginLeft: 'auto', color: 'var(--muted)', fontSize: 11 }}>
+          {topicIndex + 1} / {totalTopics}
+        </span>
       </div>
       <h1 className={styles.contentTitle}>{topic.title}</h1>
 
-      <div
-        className={styles.contentBody}
-        dangerouslySetInnerHTML={{ __html: topic.html }}
-      />
+      <ContentBody html={topic.html} className={styles.contentBody} />
 
       {topic.playground && (
         <NrelPlayground
@@ -134,21 +139,38 @@ function TopicView({ topic, tier, prev, next, onNavigate }: TopicViewProps) {
         {next ? (
           <button
             className={`${styles.navBtn} ${styles.navBtnRight}`}
-            onClick={() => onNavigate(next.id)}
+            onClick={() => { onComplete(topic.id); onNavigate(next.id); }}
           >
             <span className={styles.navBtnLabel}>next →</span>
             {next.title}
           </button>
         ) : (
-          <span />
+          <button
+            className={`${styles.navBtn} ${styles.navBtnRight}`}
+            onClick={() => onComplete(topic.id)}
+            style={{ color: 'var(--track-color)' }}
+          >
+            <span className={styles.navBtnLabel}>done</span>
+            Mark complete ✓
+          </button>
         )}
       </div>
-    </>
+    </div>
   );
 }
 
 export default function NonRelationalTrack() {
   const [currentId, setCurrentId] = useState<string>(NREL_TOPICS[0].id);
+  const [completed, setCompleted] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    setCompleted(new Set(getCompleted('nonrelational')));
+  }, []);
+
+  const complete = useCallback((topicId: string) => {
+    markComplete('nonrelational', topicId);
+    setCompleted(c => new Set([...c, topicId]));
+  }, []);
 
   const navigate = useCallback((id: string) => {
     setCurrentId(id);
@@ -168,7 +190,7 @@ export default function NonRelationalTrack() {
       style={{ '--track-color': TRACK_COLOR, '--track-dim': TRACK_DIM } as React.CSSProperties}
     >
       {/* ── Sidebar ── */}
-      <aside className={styles.sidebar}>
+      <aside className={styles.sidebar} aria-label="Track navigation">
         <div className={styles.sidebarHeader}>
           <Link href="/" className={styles.homeLink}>
             ← back to console home
@@ -188,6 +210,7 @@ export default function NonRelationalTrack() {
 
         {NREL_TIERS.map(tier => {
           const topicsInTier = NREL_TOPICS.filter(t => t.tier === tier.id);
+          const doneInTier = topicsInTier.filter(t => completed.has(t.id)).length;
           return (
             <div
               key={tier.id}
@@ -195,15 +218,22 @@ export default function NonRelationalTrack() {
             >
               <div className={styles.tierHead}>
                 <div className={styles.tierName}>{tier.name}</div>
-                <div className={`${styles.tierLabel} ${tier.locked ? styles.tierLabelMuted : ''}`}>
-                  {tier.label}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div className={`${styles.tierLabel} ${tier.locked ? styles.tierLabelMuted : ''}`}>
+                    {tier.label}
+                  </div>
+                  {!tier.locked && doneInTier > 0 && (
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--track-color)', opacity: 0.8 }}>
+                      {doneInTier}/{topicsInTier.length}
+                    </span>
+                  )}
                 </div>
               </div>
               <div className={styles.strata}>
-                {NREL_TIERS.map(t2 => (
+                {topicsInTier.map((_, i) => (
                   <div
-                    key={t2.id}
-                    className={`${styles.strataBar} ${t2.order <= tier.order ? styles.strataBarFill : ''}`}
+                    key={i}
+                    className={`${styles.strataBar} ${completed.has(topicsInTier[i].id) ? styles.strataBarFill : ''}`}
                   />
                 ))}
               </div>
@@ -218,7 +248,12 @@ export default function NonRelationalTrack() {
                       key={topic.id}
                       className={`${styles.navItem} ${topic.id === currentId ? styles.navItemActive : ''}`}
                       onClick={() => navigate(topic.id)}
+                      aria-current={topic.id === currentId ? 'page' : undefined}
+                      title={topic.title}
                     >
+                      {completed.has(topic.id) && (
+                        <span style={{ color: 'var(--track-color)', marginRight: 5, flexShrink: 0 }}>✓</span>
+                      )}
                       {topic.title}
                     </button>
                   ))}
@@ -230,7 +265,7 @@ export default function NonRelationalTrack() {
       </aside>
 
       {/* ── Content ── */}
-      <main className={styles.content}>
+      <main className={styles.content} aria-label="Lesson content">
         {isSetup ? (
           <SetupView />
         ) : currentTopic ? (
@@ -239,7 +274,10 @@ export default function NonRelationalTrack() {
             tier={currentTier}
             prev={prev}
             next={next}
+            topicIndex={idx}
+            totalTopics={NREL_TOPICS.length}
             onNavigate={navigate}
+            onComplete={complete}
           />
         ) : null}
       </main>

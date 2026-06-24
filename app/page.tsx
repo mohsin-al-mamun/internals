@@ -1,11 +1,14 @@
 import Link from "next/link";
 import styles from "./page.module.css";
+import { REL_TOPICS } from "./relational/data";
+import { NREL_TOPICS } from "./nonrelational/data";
+import ContinueLink from "./components/ContinueLink";
 
 export default function Home() {
   return (
     <div className={styles.homePage}>
       <div className={styles.homeContainer}>
-        <div className={styles.homeTopLabel}>Database Reference</div>
+        <div className={styles.homeTopLabel}>Interactive Learning Platform</div>
 
         {/* Hero */}
         <section className={styles.hero}>
@@ -138,6 +141,21 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Stat row */}
+        <div className={styles.statRow}>
+          <span className={styles.statItem}>
+            <span className={styles.statNum}>{REL_TOPICS.length + NREL_TOPICS.length}</span> lessons
+          </span>
+          <span className={styles.statSep}>·</span>
+          <span className={styles.statItem}>
+            <span className={styles.statNum}>3</span> playgrounds
+          </span>
+          <span className={styles.statSep}>·</span>
+          <span className={styles.statItem}>PostgreSQL · MongoDB · Redis</span>
+          <span className={styles.statSep}>·</span>
+          <span className={styles.statItem}>Surface → Bedrock</span>
+        </div>
+
         {/* Divider */}
         <div className={styles.heroDivider}>
           <div className={styles.dividerLine} />
@@ -156,9 +174,11 @@ export default function Home() {
             <h2 className={styles.cardTitle}>PostgreSQL</h2>
             <div className={styles.cardMeta}>tables &middot; keys &middot; joins &middot; transactions</div>
             <p className={styles.cardDesc}>Fixed schema, explicit relationships, strong consistency.</p>
+            <div className={styles.cardLessonCount}>{REL_TOPICS.length} lessons &middot; 3 tiers &middot; SQL playground</div>
             <span className={`${styles.cardCta} ${styles.ctaBlue}`}>
               start with surface <span>→</span>
             </span>
+            <ContinueLink track="relational" accentColor="#5b9bf9" />
           </Link>
 
           <Link href="/nonrelational" className={`${styles.trackCard} ${styles.trackNrel}`}>
@@ -170,9 +190,11 @@ export default function Home() {
             <h2 className={styles.cardTitle}>MongoDB &amp; Redis</h2>
             <div className={styles.cardMeta}>documents &middot; key-value &middot; flexible shape</div>
             <p className={styles.cardDesc}>Flexible shape, fast access, built for speed and scale.</p>
+            <div className={styles.cardLessonCount}>{NREL_TOPICS.length} lessons &middot; 3 tiers &middot; KV + doc simulators</div>
             <span className={`${styles.cardCta} ${styles.ctaGreen}`}>
               start with surface <span>→</span>
             </span>
+            <ContinueLink track="nonrelational" accentColor="#38d39b" />
           </Link>
         </section>
       </div>

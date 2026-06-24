@@ -362,6 +362,7 @@ interface Props {
 export default function NrelPlayground({ topicId, type, preset }: Props) {
   const [input, setInput] = useState(preset);
   const [output, setOutput] = useState('Output will appear here.');
+  const [running, setRunning] = useState(false);
   const prevTopicRef = useRef(topicId);
 
   useEffect(() => {
@@ -373,16 +374,24 @@ export default function NrelPlayground({ topicId, type, preset }: Props) {
   }, [topicId, preset]);
 
   function run() {
+    setRunning(true);
     try {
       const result = type === 'kv' ? runKv(input) : runDoc(input);
       setOutput(result || '(empty)');
     } catch (e: any) {
       setOutput('(error) ' + e.message);
+    } finally {
+      setRunning(false);
     }
   }
 
+  function reset() {
+    setInput(preset);
+    setOutput('Output will appear here.');
+  }
+
   const engineName = type === 'kv' ? 'kv-sim' : 'doc-sim';
-  const hint = 'Simulated console — not a real Redis/Mongo instance, but the same command syntax.';
+  const hint = 'Simulated console — not a real Redis/Mongo instance. State persists across lessons — reload to reset all.';
 
   return (
     <div className={styles.playground}>
@@ -391,9 +400,14 @@ export default function NrelPlayground({ topicId, type, preset }: Props) {
           <span className={styles.pdot} />
           {engineName}
         </div>
-        <button className={styles.runbtn} onClick={run}>
-          Run ▸
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className={styles.runbtn} onClick={reset} disabled={running} aria-label="Reset playground to preset">
+            Reset
+          </button>
+          <button className={styles.runbtn} onClick={run} disabled={running} aria-label="Run command">
+            {running ? 'running…' : 'Run ▸'}
+          </button>
+        </div>
       </div>
       <textarea
         className={styles.pgInput}

@@ -46,3 +46,10 @@ a {
 ::selection {
   background: #4DA8DA44;
 }
+
+/* ── Focus styles ── */
+:focus-visible {
+  outline: 2px solid var(--track-color, var(--rel));
+  outline-offset: 2px;
+  border-radius: 4px;
+}

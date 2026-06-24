@@ -82,6 +82,11 @@ export default function SqlPlayground({ preset, seedSql, topicId }: Props) {
     }
   }
 
+  function reset() {
+    setSql(preset);
+    setOutput('Output will appear here.');
+  }
+
   return (
     <div className={styles.playground}>
       <div className={styles.playgroundHead}>
@@ -89,9 +94,14 @@ export default function SqlPlayground({ preset, seedSql, topicId }: Props) {
           <span className={styles.pdot} />
           sqlite (wasm)
         </div>
-        <button className={styles.runbtn} onClick={run} disabled={running}>
-          {running ? 'running…' : 'Run ▸'}
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className={styles.runbtn} onClick={reset} disabled={running} aria-label="Reset playground to preset">
+            Reset
+          </button>
+          <button className={styles.runbtn} onClick={run} disabled={running} aria-label="Run SQL query">
+            {running ? 'running…' : 'Run ▸'}
+          </button>
+        </div>
       </div>
       <textarea
         className={styles.pgInput}
