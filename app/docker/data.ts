@@ -32,6 +32,56 @@ export const DOCKER_TIERS: Tier[] = [
 export const DOCKER_TOPICS: DockerTopic[] = [
   // ── SURFACE ──────────────────────────────────────────────────
   {
+    id: 'docker-s0', tier: 't1',
+    title: 'Docker architecture — how it all fits together',
+    html: `<p>Before running your first container, it helps to see what's actually happening when you type a Docker command. Docker isn't a single program — it's a layered system.</p>
+<pre class="codeblock">You type:  docker run nginx
+
+docker CLI        ← the command you type; sends API request over a Unix socket
+     ↓
+Docker daemon     ← dockerd; manages images, networks, volumes
+     ↓
+containerd        ← industry-standard container runtime; handles lifecycle
+     ↓
+runc              ← low-level OCI runtime; makes the actual Linux kernel calls
+     ↓
+Linux kernel      ← namespaces (isolation) + cgroups (resource limits)</pre>
+<p>In day-to-day use, this is invisible — <code>docker run</code> is one command and the container just starts. But knowing the layers explains error messages, explains why Kubernetes can run Docker images without the Docker daemon, and explains what "OCI-compliant" means.</p>
+<p>The Bedrock tier covers each component in depth. For now: think of Docker as a clean user interface over a set of Linux kernel primitives that have existed for years.</p>
+<div class="callout">
+  <div class="callout-label">On Mac and Windows</div>
+  Containers require a Linux kernel. Docker Desktop runs a lightweight Linux VM transparently. Your commands still work identically, but they're talking to containers running inside that VM — not natively on macOS or Windows. This is why some Linux-specific behaviors differ: bind mount speed, host networking, and kernel version all come from the VM, not your laptop.
+</div>`,
+  },
+  {
+    id: 'docker-s0b', tier: 't1',
+    title: 'The Docker lifecycle — build once, run anywhere',
+    html: `<p>Developers new to Docker often get confused because they're working with two distinct phases — a <strong>build phase</strong> and a <strong>run phase</strong> — and conflating them is the root of most beginner frustration.</p>
+<pre class="codeblock">1. Write code              (your editor — outside Docker)
+        ↓
+2. Write a Dockerfile      (a recipe that describes how to build an image)
+        ↓
+3. docker build            (executes the Dockerfile → produces an image)
+        ↓
+4. Image                   (read-only snapshot; lives locally or in a registry)
+        ↓
+5. docker run              (creates a container from the image and starts it)
+        ↓
+6. Container running       (your app is live — processes are executing)
+        ↓
+7. docker stop             (sends SIGTERM → graceful shutdown)
+        ↓
+8. docker rm               (deletes the stopped container)
+        ↓
+   Image still exists — run it again any time, on any machine</pre>
+<p>The most common beginner mistake: editing source code and wondering why the running container doesn't reflect the change. The code is <em>frozen inside an image</em> from step 3. To see your change, you must rebuild (step 3) and rerun (step 5).</p>
+<p>The exception is development with <strong>bind mounts</strong> — where your source directory is mounted into the container live, so the container reads from your actual files without a rebuild. That's covered in the Development Workflow topic.</p>
+<div class="callout">
+  <div class="callout-label">Build time vs run time</div>
+  Everything in a Dockerfile executes at <em>build time</em> — <code>RUN npm ci</code>, <code>COPY . .</code>, all of it. The result is frozen into an image. When the container runs (<em>run time</em>), only <code>CMD</code> or <code>ENTRYPOINT</code> executes. This distinction matters for <code>ENV</code> vs <code>ARG</code>, secrets, and debugging unexpected behavior.
+</div>`,
+  },
+  {
     id: 'docker-s1', tier: 't1',
     title: 'What Docker actually is',
     html: `<p>Docker packages an application and everything it needs to run — code, runtime, libraries, config — into a single unit called a <strong>container</strong>. The container runs the same way on any machine that has Docker installed.</p>
@@ -132,7 +182,7 @@ RUN npm ci --only=production
 # Copy the rest of the source code
 COPY . .
 
-# Document which port the app uses (informational)
+# Document which port the app uses (informational only — does not publish it)
 EXPOSE 3000
 
 # Command to run when the container starts
@@ -154,6 +204,88 @@ docker run -d -p 3000:3000 myapp:latest</pre>
 <div class="callout">
   <div class="callout-label">CMD vs ENTRYPOINT</div>
   <code>CMD</code> sets the default command — easily overridden at <code>docker run</code>. <code>ENTRYPOINT</code> sets a fixed executable; <code>CMD</code> then provides its default arguments. Use <code>ENTRYPOINT</code> for containers that should always run the same binary; <code>CMD</code> for flexible images.
+</div>`,
+  },
+  {
+    id: 'docker-s4b', tier: 't1',
+    title: '.dockerignore — controlling the build context',
+    html: `<p>When you run <code>docker build</code>, Docker sends the entire build context directory to the daemon before processing the Dockerfile — before any instruction runs. Without a <code>.dockerignore</code> file, this includes everything: <code>node_modules</code>, <code>.git</code>, logs, coverage reports, and any <code>.env</code> files sitting in your project.</p>
+<p>This causes two problems:</p>
+<ul>
+  <li><strong>Slow builds</strong> — sending 500 MB of <code>node_modules</code> to the daemon on every build adds seconds or minutes, even if you never copy them into the image.</li>
+  <li><strong>Secrets baked into images</strong> — if you <code>COPY . .</code> without a <code>.dockerignore</code>, your <code>.env</code> file with database passwords gets included in the image layer.</li>
+</ul>
+<p>Create <code>.dockerignore</code> in the same directory as your Dockerfile:</p>
+<pre class="codeblock"># .dockerignore
+node_modules
+.git
+.env
+.env.*
+dist
+build
+coverage
+*.log
+.DS_Store
+.vscode
+.idea
+README.md</pre>
+<p>The syntax is identical to <code>.gitignore</code>. The impact:</p>
+<pre class="codeblock"># Without .dockerignore
+docker build -t myapp .
+# Sending build context to Docker daemon: 312 MB   ← slow
+
+# After adding .dockerignore
+docker build -t myapp .
+# Sending build context to Docker daemon: 1.2 MB   ← fast</pre>
+<div class="callout">
+  <div class="callout-label">Why ignore node_modules locally</div>
+  Your local <code>node_modules</code> is compiled for your OS and architecture (native modules on Apple Silicon differ from Linux x86-64). The Dockerfile runs <code>RUN npm ci</code> inside the container anyway — it installs fresh packages for the container's Linux environment. Sending your local <code>node_modules</code> wastes bandwidth and would be wrong to use even if copied in.
+</div>`,
+  },
+  {
+    id: 'docker-s4c', tier: 't1',
+    title: 'Dockerfile best practices — COPY, CMD, USER',
+    html: `<p>Once you're past the basics, a few patterns come up in every real Dockerfile.</p>
+<p><strong>COPY vs ADD</strong></p>
+<p>Both copy files into the image. <code>ADD</code> has two extra features: it downloads from URLs and auto-extracts <code>.tar.gz</code> archives. Those features make <code>ADD</code> harder to reason about — use <code>COPY</code> for everything:</p>
+<pre class="codeblock"># Prefer COPY — behavior is explicit and obvious
+COPY package*.json ./
+COPY src/ ./src/
+
+# ADD for extraction — only valid case
+ADD app.tar.gz /app/
+
+# ADD with URL — never do this (no cache control, unverified download)
+ADD https://example.com/file.tar.gz /app/  # ← bad practice, use RUN curl instead</pre>
+<p><strong>CMD: shell form vs JSON (exec) form</strong></p>
+<pre class="codeblock"># Shell form — Docker wraps this in /bin/sh -c "node server.js"
+CMD node server.js
+
+# JSON (exec) form — runs your process directly
+CMD ["node", "server.js"]</pre>
+<p>Always prefer the JSON form. Shell form makes <code>/bin/sh</code> PID 1 inside the container. Signals like <code>SIGTERM</code> go to PID 1 — if that's <code>sh</code>, it may not forward <code>SIGTERM</code> to your Node process, causing unclean shutdowns. JSON form makes your app PID 1 directly.</p>
+<p><strong>ENTRYPOINT + CMD together</strong></p>
+<pre class="codeblock">ENTRYPOINT ["node"]
+CMD ["server.js"]
+# Runs: node server.js
+# Override at runtime: docker run myapp worker.js → node worker.js</pre>
+<p><strong>One process per container</strong></p>
+<p>Containers are designed around one main process. When PID 1 exits, the container stops. Running nginx + node + cron in one container breaks this model: you need a process supervisor, logs come from multiple sources, and health checks become ambiguous. Run each service in its own container and wire them with Compose.</p>
+<p><strong>Non-root user</strong></p>
+<pre class="codeblock">FROM node:20-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+COPY . .
+
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser        # all subsequent RUN/CMD/ENTRYPOINT run as appuser
+
+EXPOSE 3000
+CMD ["node", "server.js"]</pre>
+<div class="callout">
+  <div class="callout-label">Many official images include a non-root user</div>
+  <code>node:20</code> ships with a pre-created <code>node</code> user. You can <code>USER node</code> without creating one. Check the image's page on Docker Hub to see what's pre-baked.
 </div>`,
   },
   {
@@ -220,33 +352,73 @@ docker network connect mynet web    # add running container to network
 docker network rm mynet             # delete network</pre>
 <div class="callout">
   <div class="callout-label">Why container-name DNS works</div>
-  Docker's embedded DNS server resolves container names to their internal IP addresses — but only within the same user-defined network. The default bridge network doesn't get this feature; only networks you create with <code>docker network create</code> do. Always create a named network for multi-container apps.
-</div>`,
+  Docker's embedded DNS server resolves container names to their internal IP addresses — but only within user-defined networks. The default bridge network doesn't get this feature; only networks you create with <code>docker network create</code> do. Always create a named network for multi-container apps.
+</div>
+<p><strong>The localhost confusion — the most common Docker networking mistake</strong></p>
+<p>Inside a container, <code>localhost</code> refers to <em>the container itself</em> — not your host machine. This surprises almost every developer new to Docker.</p>
+<pre class="codeblock"># Common mistake: connecting to a service running on your laptop
+DATABASE_URL=postgres://user:pass@localhost:5432/db
+# Inside the container, localhost = this container
+# → connection refused — Postgres isn't running inside this container
+
+# Fix 1: use the container/service name (when on the same Docker network)
+DATABASE_URL=postgres://user:pass@db:5432/db
+
+# Fix 2: host.docker.internal (Docker Desktop on Mac/Windows)
+DATABASE_URL=postgres://user:pass@host.docker.internal:5432/db</pre>
+<p><code>host.docker.internal</code> is a special hostname Docker Desktop resolves to your laptop's IP. It lets a container reach services running directly on your machine — a locally installed Postgres, another non-containerized API, etc.</p>
+<pre class="codeblock"># host.docker.internal is not available on Linux by default
+# Add it explicitly in Compose:
+services:
+  app:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"</pre>`,
   },
   {
     id: 'docker-s7', tier: 't1',
-    title: 'docker-compose — multi-container apps',
-    html: `<p><strong>Docker Compose</strong> defines a multi-container application in a single YAML file and manages all containers as a group.</p>
+    title: 'Docker Compose — multi-container apps',
+    html: `<p><strong>Docker Compose</strong> defines a multi-container application in a single YAML file and manages all containers as a group. Instead of running four <code>docker run</code> commands and manually wiring networks, you describe the whole stack once and start it with one command.</p>
+<p>A full-stack example — React frontend, Node/Express backend, PostgreSQL, Redis:</p>
 <pre class="codeblock">services:
+  frontend:
+    build: ./frontend            # React app served by nginx
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+  backend:
+    build: ./backend             # Express API
+    ports:
+      - "4000:4000"
+    environment:
+      DATABASE_URL: postgres://postgres:secret@db:5432/myapp
+      REDIS_URL: redis://cache:6379
+    depends_on:
+      db:
+        condition: service_healthy
+
   db:
-    image: postgres:16
+    image: postgres:16-alpine
     environment:
       POSTGRES_PASSWORD: secret
       POSTGRES_DB: myapp
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 5
 
-  app:
-    build: .                   # build image from ./Dockerfile
-    ports:
-      - "3000:3000"
-    environment:
-      DATABASE_URL: postgres://postgres:secret@db:5432/myapp
-    depends_on:
-      - db
+  cache:
+    image: redis:7-alpine
+    volumes:
+      - redisdata:/data
 
 volumes:
-  pgdata:</pre>
+  pgdata:
+  redisdata:</pre>
+<p>Compose automatically creates a network called <code>[project]_default</code> and joins all four services to it. The service names — <code>frontend</code>, <code>backend</code>, <code>db</code>, <code>cache</code> — become DNS hostnames on that network. That's why <code>DATABASE_URL</code> points to <code>db:5432</code> and Redis connects via <code>cache:6379</code> without any IP addresses or manual network setup.</p>
 <p>The essential commands:</p>
 <pre class="codeblock">docker compose up             # start all services (foreground)
 docker compose up -d          # detached (background)
@@ -259,7 +431,48 @@ docker compose logs -f        # follow all logs
 docker compose exec app bash  # shell into a running service</pre>
 <div class="callout">
   <div class="callout-label">depends_on doesn't wait for ready</div>
-  <code>depends_on</code> ensures container start order, not that the service inside is actually ready. Postgres takes a few seconds to accept connections after the container starts. Use <code>healthcheck</code> + <code>depends_on: condition: service_healthy</code> for proper orchestration, or add retry logic in your app's startup.
+  <code>depends_on</code> ensures container start order, not that the service inside is actually ready. Postgres takes a few seconds to accept connections after the container starts. Use <code>healthcheck</code> + <code>depends_on: condition: service_healthy</code> for proper orchestration — as shown in the example above.
+</div>`,
+  },
+  {
+    id: 'docker-s7b', tier: 't1',
+    title: 'Development workflow — hot reload without rebuilding',
+    html: `<p>The most productive way to develop inside Docker separates two things beginners often conflate: <strong>rebuilding the image</strong> (slow — only needed when dependencies change) and <strong>seeing code changes</strong> (instant — with bind mounts).</p>
+<p><strong>The wrong approach:</strong></p>
+<pre class="codeblock">docker build -t myapp . && docker run myapp    # rebuilding every code change kills flow</pre>
+<p><strong>The right approach — bind mount your source code:</strong></p>
+<pre class="codeblock">services:
+  app:
+    build: .
+    volumes:
+      - .:/app                    # your code directory → container /app
+      - /app/node_modules         # anonymous volume: keeps container's node_modules
+    ports:
+      - "3000:3000"
+    command: npm run dev          # nodemon, ts-node-dev, vite, etc.</pre>
+<p>With this setup: you save a file → the bind mount makes the change visible inside the container immediately → your file watcher (nodemon, vite, ts-node-dev) picks it up and restarts. Zero rebuilds during development.</p>
+<p>The anonymous volume <code>/app/node_modules</code> is crucial. Without it, the bind mount of <code>.</code> would also overwrite <code>/app/node_modules</code> with your host's version — which is compiled for the wrong OS. The anonymous volume takes precedence, keeping the container's <code>node_modules</code> intact.</p>
+<p><strong>When you actually need to rebuild:</strong></p>
+<ul>
+  <li>You add or update a dependency in <code>package.json</code></li>
+  <li>You change the <code>Dockerfile</code> itself</li>
+  <li>You change an <code>ENV</code> value baked into the image</li>
+</ul>
+<pre class="codeblock">docker compose up --build    # rebuild then start</pre>
+<p><strong>docker compose watch</strong> — automates sync vs rebuild decisions (Docker Desktop 4.24+):</p>
+<pre class="codeblock">services:
+  app:
+    build: .
+    develop:
+      watch:
+        - action: sync           # just sync files — no rebuild
+          path: ./src
+          target: /app/src
+        - action: rebuild        # rebuild the image when this changes
+          path: package.json</pre>
+<div class="callout">
+  <div class="callout-label">Bind mounts are slower on Docker Desktop (Mac/Windows)</div>
+  Docker Desktop runs inside a Linux VM. File changes cross the VM boundary, which adds latency — file watching can feel sluggish for large projects. Enable VirtioFS in Docker Desktop Settings → General for significantly better performance. On native Linux, bind mounts are full speed.
 </div>`,
   },
   {
@@ -291,8 +504,8 @@ docker cp ./config.yml web:/app/  # host → container</pre>
 <pre class="codeblock">docker run -it --entrypoint bash myapp    # override entrypoint to get a shell
 docker run --rm myapp cat /etc/os-release # run a one-off command</pre>
 <div class="callout">
-  <div class="callout-label">alpine containers have no bash</div>
-  Alpine-based images (node:20-alpine, python:3.12-alpine) use <code>sh</code>, not <code>bash</code>. <code>docker exec -it container bash</code> fails with "not found". Use <code>sh</code> instead. To get bash, add <code>RUN apk add bash</code> to your Dockerfile or use a non-Alpine base.
+  <div class="callout-label">Alpine containers have no bash</div>
+  Alpine-based images (node:20-alpine, python:3.12-alpine) use <code>sh</code>, not <code>bash</code>. <code>docker exec -it container bash</code> fails with "not found". Use <code>sh</code> instead. To get bash, add <code>RUN apk add bash</code> to your Dockerfile or switch to a non-Alpine base.
 </div>`,
   },
 
@@ -339,6 +552,55 @@ docker build --no-cache -t myapp .</pre>
 </div>`,
   },
   {
+    id: 'docker-m1b', tier: 't2',
+    title: 'BuildKit — the modern Docker build engine',
+    html: `<p>BuildKit is Docker's modern build engine, enabled by default since Docker 23.0. It replaces the legacy builder with one that runs faster, uses smarter caching, and adds capabilities the original builder never had.</p>
+<p><strong>What BuildKit adds:</strong></p>
+<ul>
+  <li><strong>Parallel stage execution</strong> — independent <code>FROM</code> stages in a multi-stage build run simultaneously instead of sequentially</li>
+  <li><strong>Cache mounts</strong> — persist a cache directory across builds without baking it into a layer</li>
+  <li><strong>Secret mounts</strong> — inject secrets at build time without them appearing in any image layer</li>
+  <li><strong>SSH forwarding</strong> — forward your SSH agent for private repo access during build</li>
+</ul>
+<p><strong>Cache mounts</strong> — the most immediately useful feature:</p>
+<pre class="codeblock"># syntax=docker/dockerfile:1
+FROM node:20-alpine
+WORKDIR /app
+
+COPY package*.json ./
+
+# npm's cache persists between builds on this machine — cold installs become warm
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci
+
+COPY . .
+CMD ["node", "server.js"]</pre>
+<p>The cache directory survives across builds. A cold <code>npm ci</code> that takes 30 seconds becomes 3 seconds after the first run, even when <code>package.json</code> changes.</p>
+<p><strong>Secret mounts</strong> — pass sensitive values at build time without leaking them into layers:</p>
+<pre class="codeblock"># syntax=docker/dockerfile:1
+FROM node:20-alpine
+
+# .npmrc is available only during this RUN — never written to a layer
+RUN --mount=type=secret,id=npmrc,target=/root/.npmrc \
+    npm ci
+
+# Build with:
+docker build --secret id=npmrc,src=.npmrc -t myapp .</pre>
+<p><strong>SSH forwarding</strong> — access private GitHub repos during build without copying keys:</p>
+<pre class="codeblock"># syntax=docker/dockerfile:1
+FROM node:20-alpine
+
+RUN --mount=type=ssh \
+    npm install git+ssh://git@github.com/myorg/private-pkg.git
+
+# Build with:
+docker build --ssh default -t myapp .</pre>
+<div class="callout">
+  <div class="callout-label">BuildKit is already enabled</div>
+  In Docker Desktop and Docker 23.0+, BuildKit is the default builder — no configuration needed. The <code>DOCKER_BUILDKIT=1</code> env var you'll see in older docs is obsolete. The <code># syntax=docker/dockerfile:1</code> comment at the top of a Dockerfile pins the frontend version and unlocks <code>--mount</code> and other newer syntax.
+</div>`,
+  },
+  {
     id: 'docker-m2', tier: 't2',
     title: 'Multi-stage builds',
     html: `<p>Multi-stage builds let you use multiple <code>FROM</code> statements in one Dockerfile. You build in an early stage (with compilers, test tools, dev deps) and copy only the final artifact into a minimal production image.</p>
@@ -378,6 +640,44 @@ ENTRYPOINT ["/server"]</pre>
 </div>`,
   },
   {
+    id: 'docker-m2b', tier: 't2',
+    title: 'Image variants — alpine, slim, distroless, scratch',
+    html: `<p>For popular languages, Docker Hub publishes multiple variants of the same base image. Picking the right one has a direct impact on image size, attack surface, and debugging experience.</p>
+<pre class="codeblock">node:20              # full Debian — ~1.1 GB. Includes build tools, compilers, everything.
+node:20-slim         # Debian, stripped — ~250 MB. Most utilities removed.
+node:20-alpine       # Alpine Linux — ~130 MB. musl libc, minimal tooling.
+node:20-bookworm     # Pinned Debian release — explicit, reproducible.</pre>
+<p><strong>Full (default)</strong> — Debian with everything. Use it when you need compilers or easy package installation. Not for production images.</p>
+<p><strong>-slim</strong> — Debian with most utilities removed. Good balance: familiar <code>apt</code> package manager, smaller than full, still debuggable. Recommended default for production.</p>
+<p><strong>-alpine</strong> — built on Alpine Linux (~5 MB OS), uses <code>musl libc</code> instead of <code>glibc</code>. Significantly smaller, but with real gotchas:</p>
+<ul>
+  <li>Native npm packages (C/C++ bindings) can fail to compile or behave differently with musl — errors appear at runtime, not build time</li>
+  <li>No <code>bash</code> (only <code>sh</code>), no <code>curl</code> by default — harder to debug</li>
+  <li>Stack traces can be harder to read (musl's error format differs)</li>
+</ul>
+<p><strong>Distroless</strong> (Google) — contains only the language runtime: no shell, no package manager, no utilities:</p>
+<pre class="codeblock"># Build in node:20, copy artifacts into distroless
+FROM node:20 AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+COPY . .
+
+FROM gcr.io/distroless/nodejs20-debian12
+WORKDIR /app
+COPY --from=builder /app .
+CMD ["server.js"]</pre>
+<p>Distroless images have the smallest attack surface — there's no shell for an attacker to drop into. The tradeoff: <code>docker exec -it container bash</code> fails completely. Debug using <code>docker cp</code> to extract logs or by attaching a temporary debug sidecar.</p>
+<p><strong>scratch</strong> — completely empty. Only viable for statically compiled binaries (Go, Rust):</p>
+<pre class="codeblock">FROM scratch
+COPY --from=builder /app/server /server
+ENTRYPOINT ["/server"]   # image size = your binary only</pre>
+<div class="callout">
+  <div class="callout-label">What to use in practice</div>
+  Start with the full image during development. Switch to <code>-slim</code> for production. Try <code>-alpine</code> if image size is critical — but test native modules thoroughly before shipping. Use distroless only for security-sensitive deployments where the debugging inconvenience is acceptable.
+</div>`,
+  },
+  {
     id: 'docker-m3', tier: 't2',
     title: 'Environment variables — ARG vs ENV',
     html: `<p>Docker has two mechanisms for injecting values at different stages:</p>
@@ -413,8 +713,34 @@ docker run --env-file .env myapp    # load from file</pre>
       - .env                         # load from .env file</pre>
 <div class="callout">
   <div class="callout-label">Secrets in ARG are not secret</div>
-  <code>ARG</code> values are visible in the image's build history (<code>docker history myapp</code>). Never pass API keys or passwords as ARG. Use Docker secrets, a secrets manager (Vault, AWS SSM), or inject at runtime via ENV.
-</div>`,
+  <code>ARG</code> values are visible in the image's build history (<code>docker history myapp</code>). Never pass API keys or passwords as ARG. Use BuildKit secret mounts, Docker Secrets, or a secrets manager at runtime.
+</div>
+<p><strong>Never COPY .env into an image</strong></p>
+<p>A common mistake is adding <code>COPY .env .env</code> to a Dockerfile. Once a file lands in an image layer, it's permanent — even a subsequent <code>RUN rm .env</code> doesn't remove it from the earlier layer's history.</p>
+<pre class="codeblock"># Never do this in a Dockerfile
+COPY .env .env                # database passwords and API keys now in the image
+
+# Correct: inject at runtime only
+docker run --env-file .env myapp         # .env stays on host
+docker run -e DATABASE_URL="..." myapp   # individual vars</pre>
+<p><strong>Docker Secrets</strong> — for values too sensitive for environment variables:</p>
+<p>Environment variables are visible in <code>docker inspect</code>. Docker Secrets mount the value as a file at <code>/run/secrets/&lt;name&gt;</code>, reducing exposure:</p>
+<pre class="codeblock">services:
+  app:
+    image: myapp
+    secrets:
+      - db_password
+
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt   # container reads /run/secrets/db_password</pre>
+<p><strong>Image scanning</strong></p>
+<p>Images accumulate CVEs as their base OS packages age. Scan before pushing to production:</p>
+<pre class="codeblock">docker scout cves myapp         # Docker Desktop built-in scanner
+trivy image myapp               # open-source alternative, widely used in CI
+
+# GitHub Actions:
+# uses: aquasecurity/trivy-action@master</pre>`,
   },
   {
     id: 'docker-m4', tier: 't2',
@@ -523,8 +849,37 @@ docker run -d --name app --network mynet myapp
 docker network inspect mynet
 # Shows: subnet, gateway, containers currently connected + their IPs</pre>
 <div class="callout">
-  <div class="callout-label">Always use named networks in compose</div>
-  Docker Compose creates a default network for your app, and container name DNS works within it. But naming your network explicitly in <code>networks:</code> gives you control, lets external containers join it, and makes the network persist independently of the compose project.
+  <div class="callout-label">Always use named networks in Compose</div>
+  Docker Compose creates a default network for your app, and container-name DNS works within it. But naming your network explicitly in <code>networks:</code> gives you control, lets external containers join it, and makes the network persist independently of the Compose project.
+</div>`,
+  },
+  {
+    id: 'docker-m6b', tier: 't2',
+    title: 'Bind mount performance on macOS and Windows',
+    html: `<p>Bind mounts behave very differently depending on where Docker is running.</p>
+<p><strong>On Linux</strong> — Docker runs natively. Bind mounts are direct kernel filesystem operations. Identical performance to working without Docker.</p>
+<p><strong>On macOS and Windows</strong> — Docker Desktop runs a Linux VM. Every file read and write crosses the VM boundary:</p>
+<pre class="codeblock">macOS filesystem (APFS)
+    ↓  filesystem sync layer (VirtioFS or older gRPC-FUSE)
+Linux VM (ext4 inside the VM)
+    ↓
+Container bind mount</pre>
+<p>In practice: file-intensive operations inside a container (webpack watching thousands of files, <code>npm install</code>, test suites reading many files) can be 5–20× slower on macOS Docker Desktop than on native Linux.</p>
+<p><strong>VirtioFS</strong> — Docker Desktop 4.6+ replaced the older <code>osxfs</code> and <code>gRPC-FUSE</code> layers with VirtioFS, which is significantly faster for small-file workloads like Node.js projects. Enable it in Docker Desktop → Settings → General. It's the default since Desktop 4.24.</p>
+<p><strong>The biggest practical win</strong> — keep heavy directories out of bind mounts:</p>
+<pre class="codeblock">services:
+  app:
+    build: .
+    volumes:
+      - .:/app                    # bind mount source code (crosses VM boundary)
+      - /app/node_modules         # anonymous volume: lives entirely inside the VM
+      - /app/.next                # same for Next.js build cache
+    ports:
+      - "3000:3000"</pre>
+<p>The anonymous volumes keep the most file-heavy directories (<code>node_modules</code>, build caches) entirely inside the Linux VM where file access is fast. Only your actual source files cross the boundary.</p>
+<div class="callout">
+  <div class="callout-label">CI always runs on Linux</div>
+  GitHub Actions, CircleCI, and most CI systems run native Linux. A test suite that takes 3 minutes on your Mac with bind mounts might take 20 seconds in CI. If local Docker development feels slow compared to CI, it's the VM boundary — not Docker itself.
 </div>`,
   },
   {
@@ -591,7 +946,7 @@ docker network prune
 docker system prune                   # containers + networks + dangling images
 docker system prune -a                # + all unused images (not just dangling)
 docker system prune -a --volumes      # + volumes too (DATA LOSS)</pre>
-<p>Check how much space Docker is using:</p>
+<p>Check how much space Docker is using before deciding what to clean:</p>
 <pre class="codeblock">docker system df
 # TYPE            TOTAL   ACTIVE   SIZE    RECLAIMABLE
 # Images          12      3        4.2GB   3.1GB (73%)
@@ -599,7 +954,105 @@ docker system prune -a --volumes      # + volumes too (DATA LOSS)</pre>
 # Volumes         5       2        1.1GB   800MB (72%)</pre>
 <div class="callout">
   <div class="callout-label">docker system prune -a --volumes</div>
-  This deletes all unused images and all volumes not attached to a running container. On a dev machine it's fine. On a production server, it will delete your database data if the container isn't running. Always check <code>docker volume ls</code> before running.
+  This deletes all unused images and all volumes not attached to a running container. On a dev machine it's fine. On a production server, it will delete your database data if the container isn't running at that moment. Always check <code>docker volume ls</code> before running.
+</div>`,
+  },
+  {
+    id: 'docker-m9', tier: 't2',
+    title: 'Production deployment workflow',
+    html: `<p>Understanding how Docker fits into a real deployment pipeline closes the mental model. Most production workflows follow the same pattern regardless of cloud provider.</p>
+<pre class="codeblock">Developer pushes to main
+        ↓
+CI (GitHub Actions, CircleCI, GitLab CI)
+  → runs tests
+  → docker build -t registry/myapp:sha-abc123 .
+  → docker push registry/myapp:sha-abc123
+        ↓
+Container Registry
+(Docker Hub / AWS ECR / GCR / GitHub Container Registry)
+        ↓
+Production server (or Kubernetes)
+  → docker pull registry/myapp:sha-abc123
+  → docker compose up -d   (or kubectl rollout restart)</pre>
+<p>A minimal GitHub Actions workflow:</p>
+<pre class="codeblock">name: build-and-push
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to registry
+        run: |
+          echo "\${{ secrets.REGISTRY_TOKEN }}" | \
+          docker login ghcr.io -u \${{ github.actor }} --password-stdin
+
+      - name: Build and push
+        run: |
+          IMAGE=ghcr.io/\${{ github.repository }}
+          TAG=sha-$(git rev-parse --short HEAD)
+          docker build -t $IMAGE:$TAG .
+          docker push $IMAGE:$TAG</pre>
+<p>On the production server:</p>
+<pre class="codeblock">ssh deploy@prod-server
+docker pull ghcr.io/myorg/myapp:sha-abc123
+IMAGE_TAG=sha-abc123 docker compose up -d</pre>
+<p>In <code>compose.yml</code> on the server:</p>
+<pre class="codeblock">services:
+  app:
+    image: ghcr.io/myorg/myapp:\${IMAGE_TAG:-latest}
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    env_file:
+      - .env.production</pre>
+<div class="callout">
+  <div class="callout-label">Where Kubernetes fits in</div>
+  Docker Compose on a single server handles moderate traffic well. When you need multiple servers, rolling updates without downtime, autoscaling, or self-healing, that's Kubernetes — but it still runs the same Docker images you built. The CI step (build, push, tag) is identical; only the deploy step changes from <code>docker compose up</code> to <code>kubectl rollout restart</code>.
+</div>`,
+  },
+  {
+    id: 'docker-m10', tier: 't2',
+    title: 'Practical commands — diff, pause, events, update',
+    html: `<p>Beyond the core lifecycle commands, Docker has several diagnostic and management tools that don't come up daily but are invaluable when you need them.</p>
+<p><strong>docker diff</strong> — see what a container has written to its writable layer:</p>
+<pre class="codeblock">docker diff web
+# A /app/logs            ← Added
+# C /etc/nginx/nginx.conf  ← Changed
+# D /tmp/old-file        ← Deleted
+# A = added, C = changed, D = deleted (relative to the base image)</pre>
+<p>Useful for auditing what a container changed from its base image — debugging unexpected file modifications or inspecting what a third-party image actually touches at runtime.</p>
+<p><strong>docker pause / unpause</strong> — freeze and resume without stopping:</p>
+<pre class="codeblock">docker pause db        # sends SIGSTOP to all processes — CPU drops to 0%
+docker unpause db      # resumes from exactly where it stopped
+
+# Use case: take a consistent filesystem snapshot without stopping Postgres
+docker pause db
+cp -r /var/lib/docker/volumes/pgdata/ ./backup/
+docker unpause db</pre>
+<p><strong>docker rename</strong> — rename a container without recreating it:</p>
+<pre class="codeblock">docker rename quirky_mcclintock web
+# Useful when you forgot --name and Docker assigned a random name</pre>
+<p><strong>docker events</strong> — live stream of Docker daemon events:</p>
+<pre class="codeblock">docker events                          # all events in real time
+docker events --filter container=web   # filter to one container
+docker events --since 1h               # last hour's events
+
+# Example output:
+# 2024-01-15T10:23:01 container start f3a... (image=nginx, name=web)
+# 2024-01-15T10:23:45 container die   f3a... (exitCode=137)</pre>
+<p><strong>docker update</strong> — change resource limits on a running container without restarting:</p>
+<pre class="codeblock">docker update --memory 1g web              # increase memory limit
+docker update --cpus 2.0 web               # increase CPU allocation
+docker update --restart unless-stopped web # change restart policy</pre>
+<div class="callout">
+  <div class="callout-label">Reading exit codes from docker events</div>
+  <code>docker events</code> is the fastest way to diagnose a container that keeps restarting. Exit code <strong>137</strong> = OOM-killed (raise memory limit or fix a memory leak). Exit code <strong>1</strong> = process crashed (check <code>docker logs</code>). Exit code <strong>143</strong> = received SIGTERM (intentional stop).
 </div>`,
   },
 
@@ -752,7 +1205,7 @@ docker run --security-opt seccomp=my-profile.json myapp</pre>
 # Best practice for development machines</pre>
 <div class="callout">
   <div class="callout-label">Don't run as root inside containers</div>
-  Even without <code>--privileged</code>, a container running as root has more attack surface than one running as an unprivileged user. Add to your Dockerfile: <code>RUN adduser -D appuser</code> / <code>USER appuser</code>. Many official images (node, python) provide non-root variants.
+  Even without <code>--privileged</code>, a container running as root has more attack surface than one running as an unprivileged user. Add to your Dockerfile: <code>RUN adduser -D appuser</code> / <code>USER appuser</code>. Many official images (node, python) provide a pre-created non-root user you can switch to with a single <code>USER</code> instruction.
 </div>`,
   },
   {
