@@ -1,0 +1,491 @@
+.homePage {
+  background: #0a0a0b;
+  color: #e9eaec;
+  font-family: var(--font-display), sans-serif;
+  min-height: 100vh;
+  padding: 72px 72px 96px;
+  box-sizing: border-box;
+}
+
+.homeContainer {
+  max-width: 1320px;
+  margin: 0 auto;
+}
+
+.homeTopLabel {
+  font-family: var(--font-mono), monospace;
+  font-size: 13px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #6a6d72;
+  margin-bottom: 44px;
+}
+
+/* ── Hero ── */
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.02fr);
+  gap: 56px;
+  align-items: center;
+  padding-bottom: 8px;
+}
+
+.heroHeadline {
+  margin: 0;
+  font-family: var(--font-display), sans-serif;
+  font-weight: 600;
+  font-size: clamp(38px, 4.6vw, 60px);
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  color: #e9eaec;
+  text-wrap: balance;
+}
+
+.accentRead  { color: #38d39b; }
+.accentWrite { color: #5b9bf9; }
+.comma       { color: #6a6d72; }
+
+.heroStatus {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  margin-top: 32px;
+  font-family: var(--font-mono), monospace;
+  font-size: 13px;
+  color: #7c7f84;
+}
+
+.statusItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: dbpulse 2.4s ease-in-out infinite;
+}
+
+.dotGreen { background: #38d39b; }
+.dotBlue  { background: #5b9bf9; animation-delay: 1.2s; }
+.statusSep { color: #3a3d42; }
+
+@keyframes dbpulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}
+
+/* ── Diagram Panel ── */
+.diagramPanel {
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 16px;
+  background: linear-gradient(180deg, #0e0f12, #0a0b0d);
+  padding: 26px 30px 30px;
+}
+
+.diagramLabel {
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: #54575c;
+  text-transform: uppercase;
+  margin-bottom: 26px;
+}
+
+.diagramContent {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.diagramNode {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  flex: none;
+}
+
+.nodeLabel {
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: #6a6d72;
+}
+
+.clientWindow {
+  width: 150px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 10px;
+  background: #141518;
+  overflow: hidden;
+}
+
+.clientTitlebar {
+  display: flex;
+  gap: 6px;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.clientDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #3a3d42;
+}
+
+.clientBody {
+  padding: 14px 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.clientRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rowIcon {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex: none;
+}
+
+.iconGreen { background: #38d39b; }
+.iconBlue  { background: #5b9bf9; }
+.iconGray  { background: rgba(255, 255, 255, 0.22); }
+
+.rowBar {
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+/* ── Lanes ── */
+.diagramLanes {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 120px;
+}
+
+.laneHeader {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.laneHeaderRight { justify-content: flex-end; }
+
+.laneLabel {
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+}
+
+.laneWrite .laneLabel { color: #5b9bf9; }
+.laneRead  .laneLabel { color: #38d39b; }
+
+.laneFlow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.laneBlocks {
+  display: flex;
+  gap: 4px;
+}
+
+.block {
+  width: 12px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.blockBlue      { background: #5b9bf9; }
+.blockBlueDim55 { background: rgba(91, 155, 249, 0.55); }
+.blockBlueDim28 { background: rgba(91, 155, 249, 0.28); }
+.blockGreen      { background: #38d39b; }
+.blockGreenDim55 { background: rgba(56, 211, 155, 0.55); }
+.blockGreenDim28 { background: rgba(56, 211, 155, 0.28); }
+
+.laneLine {
+  flex: 1;
+  height: 2px;
+  border: none;
+}
+
+.lineBlue {
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(91, 155, 249, 0.65) 0,
+    rgba(91, 155, 249, 0.65) 6px,
+    transparent 6px,
+    transparent 14px
+  );
+  background-size: 14px 2px;
+  animation: dashRight 0.45s linear infinite;
+}
+
+.lineGreen {
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(56, 211, 155, 0.65) 0,
+    rgba(56, 211, 155, 0.65) 6px,
+    transparent 6px,
+    transparent 14px
+  );
+  background-size: 14px 2px;
+  animation: dashLeft 0.45s linear infinite;
+}
+
+@keyframes dashRight {
+  from { background-position-x: 0; }
+  to   { background-position-x: 14px; }
+}
+
+@keyframes dashLeft {
+  from { background-position-x: 0; }
+  to   { background-position-x: -14px; }
+}
+
+.laneArrow { font-size: 15px; line-height: 1; display: inline-block; }
+.arrowBlue  { color: #5b9bf9; animation: arrowRight 1.5s ease-in-out infinite; }
+.arrowGreen { color: #38d39b; animation: arrowLeft  1.5s ease-in-out infinite; }
+
+@keyframes arrowRight {
+  0%, 100% { transform: translateX(0);   opacity: 0.6; }
+  50%       { transform: translateX(4px); opacity: 1; }
+}
+
+@keyframes arrowLeft {
+  0%, 100% { transform: translateX(0);    opacity: 0.6; }
+  50%       { transform: translateX(-4px); opacity: 1; }
+}
+
+.dbCylinder {
+  width: 118px;
+  height: 138px;
+  display: block;
+}
+
+/* ── Divider ── */
+.heroDivider {
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  margin: 60px 0 44px;
+}
+
+.dividerLine {
+  flex: 1;
+  height: 1px;
+}
+
+.dividerLine:first-child {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.13));
+}
+
+.dividerLine:last-child {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.13), transparent);
+}
+
+.dividerLabel {
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
+  letter-spacing: 0.26em;
+  color: #6a6d72;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ── Cards ── */
+.cardsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 26px;
+  align-items: stretch;
+}
+
+.trackCard {
+  position: relative;
+  overflow: hidden;
+  display: block;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 16px;
+  background: #0c0d10;
+  padding: 34px 36px 32px;
+  transition: border-color 0.25s ease, transform 0.25s ease, background 0.25s ease;
+  color: inherit;
+  text-decoration: none;
+}
+
+.trackRel:hover {
+  border-color: rgba(91, 155, 249, 0.4);
+  transform: translateY(-3px);
+  background: #0e1015;
+}
+
+.trackNrel:hover {
+  border-color: rgba(56, 211, 155, 0.4);
+  transform: translateY(-3px);
+  background: #0e1014;
+}
+
+.cardAccentLine {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  opacity: 0.6;
+}
+
+.trackRel .cardAccentLine  { background: linear-gradient(90deg, #5b9bf9, transparent); }
+.trackNrel .cardAccentLine { background: linear-gradient(90deg, #38d39b, transparent); }
+
+.cardTagRow {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.tagDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.tagDotBlue  { background: #5b9bf9; box-shadow: 0 0 10px rgba(91, 155, 249, 0.6); }
+.tagDotGreen { background: #38d39b; box-shadow: 0 0 10px rgba(56, 211, 155, 0.6); }
+
+.tagText {
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.tagTextBlue  { color: #5b9bf9; }
+.tagTextGreen { color: #38d39b; }
+
+.cardTitle {
+  margin: 20px 0 0;
+  font-family: var(--font-display), sans-serif;
+  font-weight: 600;
+  font-size: 30px;
+  letter-spacing: -0.01em;
+  color: #e9eaec;
+}
+
+.cardMeta {
+  font-family: var(--font-mono), monospace;
+  font-size: 14px;
+  color: #7c7f84;
+  margin-top: 14px;
+}
+
+.cardDesc {
+  margin: 18px 0 0;
+  font-size: 17px;
+  line-height: 1.5;
+  color: #c2c5c9;
+  max-width: 42ch;
+  font-family: var(--font-display), sans-serif;
+  font-weight: 400;
+}
+
+.cardCta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 30px;
+  font-family: var(--font-mono), monospace;
+  font-size: 14px;
+  transition: gap 0.2s ease;
+}
+
+.ctaBlue  { color: #5b9bf9; }
+.ctaGreen { color: #38d39b; }
+
+.trackCard:hover .cardCta { gap: 14px; }
+
+/* ── Lane block animations ── */
+
+/* Write blocks: stagger departure toward the line (left → right) */
+.laneWrite .block:nth-child(1) { animation: blockSend 2.1s ease-in-out 0s    infinite; }
+.laneWrite .block:nth-child(2) { animation: blockSend 2.1s ease-in-out 0.35s infinite; }
+.laneWrite .block:nth-child(3) { animation: blockSend 2.1s ease-in-out 0.7s  infinite; }
+
+@keyframes blockSend {
+  0%   { opacity: 0.25; transform: translateX(0); }
+  25%  { opacity: 1;    transform: translateX(0); }
+  60%  { opacity: 0.5;  transform: translateX(5px); }
+  80%  { opacity: 0;    transform: translateX(10px); }
+  81%  { opacity: 0;    transform: translateX(0); }
+  100% { opacity: 0.25; transform: translateX(0); }
+}
+
+/* Read blocks: stagger arrival from the line (right → left) */
+.laneRead .block:nth-child(1) { animation: blockReceive 2.1s ease-in-out 0.15s infinite; }
+.laneRead .block:nth-child(2) { animation: blockReceive 2.1s ease-in-out 0.5s  infinite; }
+.laneRead .block:nth-child(3) { animation: blockReceive 2.1s ease-in-out 0.85s infinite; }
+
+@keyframes blockReceive {
+  0%   { opacity: 0;    transform: translateX(-10px); }
+  20%  { opacity: 0.5;  transform: translateX(-5px); }
+  50%  { opacity: 1;    transform: translateX(0); }
+  80%  { opacity: 0.25; transform: translateX(0); }
+  100% { opacity: 0;    transform: translateX(-10px); }
+}
+
+/* ── DB cylinder row activity ── */
+
+/* blue rows pulse on write cycle */
+.dbCylinder rect:nth-child(3) { animation: dbWrite 2.1s ease-in-out 0s    infinite; }
+.dbCylinder rect:nth-child(4) { animation: dbWrite 2.1s ease-in-out 0.35s infinite; }
+.dbCylinder rect:nth-child(9) { animation: dbWrite 2.1s ease-in-out 0.7s  infinite; }
+
+/* green rows pulse on read cycle */
+.dbCylinder rect:nth-child(6) { animation: dbRead 2.1s ease-in-out 0.15s infinite; }
+.dbCylinder rect:nth-child(7) { animation: dbRead 2.1s ease-in-out 0.5s  infinite; }
+
+/* neutral rows subtle shimmer */
+.dbCylinder rect:nth-child(5)  { animation: dbIdle 3s ease-in-out 0s    infinite; }
+.dbCylinder rect:nth-child(8)  { animation: dbIdle 3s ease-in-out 1s    infinite; }
+.dbCylinder rect:nth-child(10) { animation: dbIdle 3s ease-in-out 2s    infinite; }
+
+@keyframes dbWrite {
+  0%, 100% { opacity: 0.5; }
+  30%, 70%  { opacity: 1; filter: drop-shadow(0 0 3px rgba(91,155,249,0.8)); }
+}
+
+@keyframes dbRead {
+  0%, 100% { opacity: 0.5; }
+  30%, 70%  { opacity: 1; filter: drop-shadow(0 0 3px rgba(56,211,155,0.8)); }
+}
+
+@keyframes dbIdle {
+  0%, 100% { opacity: 0.35; }
+  50%       { opacity: 0.65; }
+}
+
+/* ── Responsive ── */
+@media (max-width: 960px) {
+  .homePage       { padding: 48px 24px 64px; }
+  .homeTopLabel   { margin-bottom: 32px; }
+  .hero           { grid-template-columns: 1fr; gap: 40px; }
+  .cardsGrid      { grid-template-columns: 1fr; }
+  .heroDivider    { margin: 44px 0 32px; }
+  .diagramContent { gap: 12px; }
+  .clientWindow   { width: 130px; }
+}
