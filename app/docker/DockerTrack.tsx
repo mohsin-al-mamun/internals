@@ -242,6 +242,7 @@ function TopicView({ topic, tier, prev, next, topicIndex, totalTopics, onNavigat
 export default function DockerTrack() {
   const [currentId, setCurrentId] = useState<string>(DOCKER_TOPICS[0].id);
   const [completed, setCompleted] = useState<Set<string>>(new Set());
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     setCompleted(new Set(getCompleted('docker')));
@@ -254,6 +255,7 @@ export default function DockerTrack() {
 
   const navigate = useCallback((id: string) => {
     setCurrentId(id);
+    setSidebarOpen(false);
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
 
@@ -270,12 +272,16 @@ export default function DockerTrack() {
       className={styles.app}
       style={{ '--track-color': TRACK_COLOR, '--track-dim': TRACK_DIM } as React.CSSProperties}
     >
+      {sidebarOpen && (
+        <div className={styles.overlay} onClick={() => setSidebarOpen(false)} />
+      )}
       {/* ── Sidebar ── */}
-      <aside className={styles.sidebar} aria-label="Track navigation">
+      <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ''}`} aria-label="Track navigation">
         <div className={styles.sidebarHeader}>
           <Link href="/" className={styles.homeLink}>
             ← back to Internals
           </Link>
+          <button className={styles.closeBtn} onClick={() => setSidebarOpen(false)} aria-label="Close menu">✕</button>
           <div className={styles.brand}>DOCKER</div>
           <div className={styles.sub}>containers · images · compose</div>
         </div>
@@ -353,6 +359,11 @@ export default function DockerTrack() {
 
       {/* ── Content ── */}
       <main className={styles.content} aria-label="Lesson content">
+        <div className={styles.mobileBar}>
+          <button className={styles.menuBtn} onClick={() => setSidebarOpen(true)}>
+            ☰ Topics
+          </button>
+        </div>
         {isSetup ? (
           <SetupView />
         ) : isMostUsed ? (

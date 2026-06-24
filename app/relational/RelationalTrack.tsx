@@ -290,6 +290,7 @@ function TopicView({ topic, tier, prev, next, topicIndex, totalTopics, onNavigat
 export default function RelationalTrack() {
   const [currentId, setCurrentId] = useState<string>(REL_TOPICS[0].id);
   const [completed, setCompleted] = useState<Set<string>>(new Set());
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     setCompleted(new Set(getCompleted('relational')));
@@ -302,6 +303,7 @@ export default function RelationalTrack() {
 
   const navigate = useCallback((id: string) => {
     setCurrentId(id);
+    setSidebarOpen(false);
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
 
@@ -322,12 +324,16 @@ export default function RelationalTrack() {
         { '--track-color': TRACK_COLOR, '--track-dim': TRACK_DIM } as React.CSSProperties
       }
     >
+      {sidebarOpen && (
+        <div className={styles.overlay} onClick={() => setSidebarOpen(false)} />
+      )}
       {/* ── Sidebar ── */}
-      <aside className={styles.sidebar} aria-label="Track navigation">
+      <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ''}`} aria-label="Track navigation">
         <div className={styles.sidebarHeader}>
           <Link href="/" className={styles.homeLink}>
             ← back to Internals
           </Link>
+          <button className={styles.closeBtn} onClick={() => setSidebarOpen(false)} aria-label="Close menu">✕</button>
           <div className={styles.brand}>RELATIONAL</div>
           <div className={styles.sub}>tables · keys · joins</div>
         </div>
@@ -409,6 +415,11 @@ export default function RelationalTrack() {
 
       {/* ── Content ── */}
       <main className={styles.content} aria-label="Lesson content">
+        <div className={styles.mobileBar}>
+          <button className={styles.menuBtn} onClick={() => setSidebarOpen(true)}>
+            ☰ Topics
+          </button>
+        </div>
         {isSetup ? (
           <SetupView />
         ) : isMostUsed ? (
