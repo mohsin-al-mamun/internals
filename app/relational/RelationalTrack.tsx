@@ -19,6 +19,103 @@ import ContentBody from '../components/ContentBody';
 const TRACK_COLOR = '#4DA8DA';
 const TRACK_DIM   = '#4DA8DA33';
 
+const MOST_USED_SECTIONS = [
+  {
+    label: 'psql meta-commands',
+    commands: [
+      { cmd: '\\l',              desc: 'list all databases' },
+      { cmd: '\\c dbname',       desc: 'connect to a database' },
+      { cmd: '\\dt',             desc: 'list tables in current schema' },
+      { cmd: '\\d tablename',    desc: 'describe table (columns, types, indexes)' },
+      { cmd: '\\di',             desc: 'list indexes' },
+      { cmd: '\\timing',         desc: 'toggle query execution time display' },
+      { cmd: '\\e',              desc: 'open last query in $EDITOR' },
+      { cmd: '\\q',              desc: 'quit psql' },
+    ],
+  },
+  {
+    label: 'Querying',
+    commands: [
+      { cmd: 'SELECT * FROM users LIMIT 10;',                         desc: 'basic select with limit' },
+      { cmd: 'SELECT col1, col2 FROM t WHERE id = $1;',               desc: 'select specific columns' },
+      { cmd: 'SELECT * FROM t ORDER BY created_at DESC LIMIT 20;',    desc: 'sort and limit' },
+      { cmd: 'SELECT COUNT(*), status FROM orders GROUP BY status;',  desc: 'count by group' },
+      { cmd: 'SELECT * FROM t WHERE name ILIKE \'%alice%\';',         desc: 'case-insensitive search' },
+    ],
+  },
+  {
+    label: 'Filtering',
+    commands: [
+      { cmd: 'WHERE age BETWEEN 18 AND 65',         desc: 'range check (inclusive)' },
+      { cmd: 'WHERE status IN (\'active\', \'pending\')', desc: 'match any in list' },
+      { cmd: 'WHERE email IS NOT NULL',             desc: 'null check' },
+      { cmd: 'WHERE tags @> ARRAY[\'admin\']',      desc: 'array contains element' },
+      { cmd: 'WHERE data->>\'key\' = \'value\'',   desc: 'JSONB field match' },
+    ],
+  },
+  {
+    label: 'Joins',
+    commands: [
+      { cmd: 'INNER JOIN orders o ON o.user_id = u.id',       desc: 'rows with match in both tables' },
+      { cmd: 'LEFT JOIN orders o ON o.user_id = u.id',        desc: 'all users, NULLs if no order' },
+      { cmd: 'LEFT JOIN … WHERE o.id IS NULL',                desc: 'users with no orders' },
+    ],
+  },
+  {
+    label: 'Aggregation',
+    commands: [
+      { cmd: 'COUNT(*)',                        desc: 'total rows' },
+      { cmd: 'COUNT(DISTINCT user_id)',         desc: 'unique values' },
+      { cmd: 'SUM(amount)',                     desc: 'sum a numeric column' },
+      { cmd: 'AVG(duration)',                   desc: 'average' },
+      { cmd: 'MIN(created_at), MAX(created_at)', desc: 'earliest and latest' },
+      { cmd: 'HAVING COUNT(*) > 5',            desc: 'filter after GROUP BY' },
+    ],
+  },
+  {
+    label: 'Modifying data',
+    commands: [
+      { cmd: "INSERT INTO users (name, email) VALUES ('Alice', 'a@x.com');", desc: 'insert a row' },
+      { cmd: 'INSERT INTO t … RETURNING id;',                               desc: 'get generated id back' },
+      { cmd: "UPDATE users SET name = 'Bob' WHERE id = 1;",                 desc: 'update a row' },
+      { cmd: 'DELETE FROM users WHERE id = 1;',                             desc: 'delete a row' },
+      { cmd: 'TRUNCATE users;',                                              desc: 'delete all rows fast (no rollback)' },
+    ],
+  },
+  {
+    label: 'Transactions',
+    commands: [
+      { cmd: 'BEGIN;',            desc: 'start a transaction' },
+      { cmd: 'COMMIT;',           desc: 'persist changes' },
+      { cmd: 'ROLLBACK;',         desc: 'undo all changes since BEGIN' },
+      { cmd: 'SAVEPOINT sp1;',    desc: 'create a partial rollback point' },
+      { cmd: 'ROLLBACK TO sp1;',  desc: 'undo back to savepoint only' },
+    ],
+  },
+  {
+    label: 'Indexes',
+    commands: [
+      { cmd: 'CREATE INDEX ON users (email);',                          desc: 'basic B-tree index' },
+      { cmd: 'CREATE INDEX CONCURRENTLY ON users (email);',             desc: 'create without locking table' },
+      { cmd: 'CREATE UNIQUE INDEX ON users (email);',                   desc: 'enforce uniqueness' },
+      { cmd: 'CREATE INDEX ON events USING GIN (tags);',                desc: 'GIN for array/JSONB search' },
+      { cmd: 'EXPLAIN ANALYZE SELECT …;',                               desc: 'show query plan + actual timing' },
+      { cmd: 'DROP INDEX idx_name;',                                    desc: 'remove an index' },
+    ],
+  },
+  {
+    label: 'Schema & admin',
+    commands: [
+      { cmd: 'CREATE TABLE t (id SERIAL PRIMARY KEY, name TEXT NOT NULL);', desc: 'create table' },
+      { cmd: 'ALTER TABLE t ADD COLUMN score INT DEFAULT 0;',               desc: 'add a column' },
+      { cmd: 'ALTER TABLE t DROP COLUMN old_col;',                          desc: 'remove a column' },
+      { cmd: 'ALTER TABLE t RENAME COLUMN old TO new;',                     desc: 'rename column' },
+      { cmd: 'DROP TABLE t;',                                               desc: 'delete table permanently' },
+      { cmd: 'VACUUM ANALYZE tablename;',                                   desc: 'reclaim space + update stats' },
+    ],
+  },
+];
+
 // ── Copy button ───────────────────────────────────────────────
 function CopyButton({ text }: { text: string }) {
   const [label, setLabel] = useState('Copy');
@@ -32,6 +129,49 @@ function CopyButton({ text }: { text: string }) {
     <button className={styles.copybtn} onClick={copy}>
       {label}
     </button>
+  );
+}
+
+// ── Most used view ────────────────────────────────────────────
+function MostUsedView() {
+  return (
+    <div className={styles.contentFade}>
+      <div className={styles.eyebrow}>
+        <span className={styles.eyebrowDot} />
+        REFERENCE · POSTGRES
+      </div>
+      <h1 className={styles.contentTitle}>Most used commands</h1>
+      <p style={{ margin: '0 0 28px', color: 'var(--text)' }}>
+        SQL and psql commands you'll reach for every session. Scan, copy, go.
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+        {MOST_USED_SECTIONS.map(section => (
+          <div key={section.label}>
+            <h3 className={styles.setupSectionTitle}>{section.label}</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {section.commands.map(({ cmd, desc }) => (
+                <div
+                  key={cmd}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)',
+                    gap: '8px 24px',
+                    alignItems: 'baseline',
+                    padding: '7px 12px',
+                    borderRadius: 6,
+                    background: 'var(--surface-1)',
+                    borderLeft: '2px solid var(--track-color)',
+                  }}
+                >
+                  <code style={{ fontFamily: 'var(--font-mono)', fontSize: 12.5, color: 'var(--heading)', whiteSpace: 'pre' }}>{cmd}</code>
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: 12.5, color: 'var(--muted)' }}>{desc}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -165,7 +305,8 @@ export default function RelationalTrack() {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
 
-  const isSetup = currentId === 'setup';
+  const isSetup    = currentId === 'setup';
+  const isMostUsed = currentId === 'most-used';
   const currentTopic = REL_TOPICS.find((t) => t.id === currentId) ?? null;
   const currentTier  = currentTopic
     ? REL_TIERS.find((t) => t.id === currentTopic.tier)
@@ -196,6 +337,12 @@ export default function RelationalTrack() {
           onClick={() => navigate('setup')}
         >
           <span className={styles.gear}>⚙</span> Setup
+        </button>
+        <button
+          className={`${styles.setupItem} ${isMostUsed ? styles.setupItemActive : ''}`}
+          onClick={() => navigate('most-used')}
+        >
+          <span className={styles.gear}>☰</span> Most used
         </button>
 
         <div className={styles.setupDivider} />
@@ -264,6 +411,8 @@ export default function RelationalTrack() {
       <main className={styles.content} aria-label="Lesson content">
         {isSetup ? (
           <SetupView />
+        ) : isMostUsed ? (
+          <MostUsedView />
         ) : currentTopic ? (
           <TopicView
             topic={currentTopic}
