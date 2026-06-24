@@ -185,7 +185,7 @@ export default function RelationalTrack() {
       <aside className={styles.sidebar} aria-label="Track navigation">
         <div className={styles.sidebarHeader}>
           <Link href="/" className={styles.homeLink}>
-            ← back to console home
+            ← back to Internals
           </Link>
           <div className={styles.brand}>RELATIONAL</div>
           <div className={styles.sub}>tables · keys · joins</div>

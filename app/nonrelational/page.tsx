@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import NonRelationalTrack from './NonRelationalTrack';
 
 export const metadata: Metadata = {
-  title: 'Non-Relational · DB Console',
+  title: 'Non-Relational · Internals',
   description: 'MongoDB & Redis — documents, key-value, flexible shape',
 };
 

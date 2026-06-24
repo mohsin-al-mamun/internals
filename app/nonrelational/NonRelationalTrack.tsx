@@ -193,7 +193,7 @@ export default function NonRelationalTrack() {
       <aside className={styles.sidebar} aria-label="Track navigation">
         <div className={styles.sidebarHeader}>
           <Link href="/" className={styles.homeLink}>
-            ← back to console home
+            ← back to Internals
           </Link>
           <div className={styles.brand}>NON-RELATIONAL</div>
           <div className={styles.sub}>documents · key-value</div>

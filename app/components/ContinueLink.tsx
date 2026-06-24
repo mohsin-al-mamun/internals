@@ -1,18 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { getLastCompleted } from '../lib/progress';
 import { REL_TOPICS } from '../relational/data';
 import { NREL_TOPICS } from '../nonrelational/data';
 
 interface Props {
   track: 'relational' | 'nonrelational';
-  className?: string;
   accentColor: string;
 }
 
-export default function ContinueLink({ track, className, accentColor }: Props) {
+export default function ContinueLink({ track, accentColor }: Props) {
   const [resumeTitle, setResumeTitle] = useState<string | null>(null);
 
   useEffect(() => {
@@ -27,9 +25,7 @@ export default function ContinueLink({ track, className, accentColor }: Props) {
   if (!resumeTitle) return null;
 
   return (
-    <Link
-      href={`/${track}`}
-      className={className}
+    <span
       style={{
         display: 'block',
         marginTop: 14,
@@ -37,13 +33,12 @@ export default function ContinueLink({ track, className, accentColor }: Props) {
         fontSize: 12,
         color: accentColor,
         opacity: 0.85,
-        textDecoration: 'none',
         overflow: 'hidden',
         textOverflow: 'ellipsis',
         whiteSpace: 'nowrap',
       }}
     >
       → Resume: {resumeTitle}
-    </Link>
+    </span>
   );
 }

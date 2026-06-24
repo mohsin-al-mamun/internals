@@ -18,8 +18,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "DB Console",
-  description: "Database reference — relational and non-relational",
+  title: "Internals",
+  description: "Learn how things actually work — databases, Linux, Docker, and more.",
 };
 
 export default function RootLayout({

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import RelationalTrack from './RelationalTrack';
 
 export const metadata: Metadata = {
-  title: 'Relational · DB Console',
+  title: 'Relational · Internals',
   description: 'PostgreSQL — tables, keys, joins, transactions',
 };
 
