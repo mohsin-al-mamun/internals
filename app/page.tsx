@@ -127,7 +127,7 @@ export default function Home() {
             <span className={`${styles.cardCta} ${styles.ctaCyan}`}>
               start with surface <span>→</span>
             </span>
-            <ContinueLink track="docker" accentColor="#0db7ed" />
+            <ContinueLink track="docker" accentColor="#a78bfa" />
           </Link>
         </section>
       </div>

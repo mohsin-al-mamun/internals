@@ -13,8 +13,8 @@ import styles from '../relational/track.module.css';
 import { markComplete, getCompleted } from '../lib/progress';
 import ContentBody from '../components/ContentBody';
 
-const TRACK_COLOR = '#0db7ed';
-const TRACK_DIM   = '#0db7ed33';
+const TRACK_COLOR = '#a78bfa';
+const TRACK_DIM   = '#a78bfa33';
 
 const MOST_USED_SECTIONS = [
   {

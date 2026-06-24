@@ -417,9 +417,9 @@
 }
 
 .trackDocker:hover {
-  border-color: rgba(13, 183, 237, 0.4);
+  border-color: rgba(167, 139, 250, 0.4);
   transform: translateY(-3px);
-  background: #091216;
+  background: #0e0c14;
 }
 
 .cardAccentLine {
@@ -434,7 +434,7 @@
 .trackRel .cardAccentLine    { background: linear-gradient(90deg, #5b9bf9, transparent); }
 .trackNrel .cardAccentLine   { background: linear-gradient(90deg, #38d39b, transparent); }
 .trackLinux .cardAccentLine  { background: linear-gradient(90deg, #f59e42, transparent); }
-.trackDocker .cardAccentLine { background: linear-gradient(90deg, #0db7ed, transparent); }
+.trackDocker .cardAccentLine { background: linear-gradient(90deg, #a78bfa, transparent); }
 
 .cardTagRow {
   display: flex;
@@ -451,7 +451,7 @@
 .tagDotBlue  { background: #5b9bf9; box-shadow: 0 0 10px rgba(91, 155, 249, 0.6); }
 .tagDotGreen { background: #38d39b; box-shadow: 0 0 10px rgba(56, 211, 155, 0.6); }
 .tagDotAmber { background: #f59e42; box-shadow: 0 0 10px rgba(245, 158, 66, 0.6); }
-.tagDotCyan  { background: #0db7ed; box-shadow: 0 0 10px rgba(13, 183, 237, 0.6); }
+.tagDotCyan  { background: #a78bfa; box-shadow: 0 0 10px rgba(167, 139, 250, 0.6); }
 
 .tagText {
   font-family: var(--font-mono), monospace;
@@ -463,7 +463,7 @@
 .tagTextBlue  { color: #5b9bf9; }
 .tagTextGreen { color: #38d39b; }
 .tagTextAmber { color: #f59e42; }
-.tagTextCyan  { color: #0db7ed; }
+.tagTextCyan  { color: #a78bfa; }
 
 .cardTitle {
   margin: 20px 0 0;
@@ -512,7 +512,7 @@
 .ctaBlue  { color: #5b9bf9; }
 .ctaGreen { color: #38d39b; }
 .ctaAmber { color: #f59e42; }
-.ctaCyan  { color: #0db7ed; }
+.ctaCyan  { color: #a78bfa; }
 
 .trackCard:hover .cardCta { gap: 14px; }
 
